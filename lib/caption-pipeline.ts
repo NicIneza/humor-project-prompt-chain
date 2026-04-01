@@ -132,6 +132,42 @@ function getCaptionRecords(payload: unknown) {
   return [payload];
 }
 
+function getRequestFailureMessage(payload: unknown, response: Response, fallbackLabel: string) {
+  const record = toObject(payload);
+
+  const prioritizedKeys = [
+    "message",
+    "detail",
+    "details",
+    "reason",
+    "error_description",
+    "errorDescription",
+    "title",
+  ];
+
+  for (const key of prioritizedKeys) {
+    const message = findStringLike(payload, [key]);
+
+    if (message && message !== "true" && message !== "false") {
+      return `${fallbackLabel}: ${message}`;
+    }
+  }
+
+  if (record && typeof record.error === "string" && record.error.trim()) {
+    return `${fallbackLabel}: ${record.error.trim()}`;
+  }
+
+  if (record && record.error === true) {
+    return `${fallbackLabel}: upstream returned error=true with status ${response.status}.`;
+  }
+
+  if (typeof payload === "string" && payload.trim()) {
+    return `${fallbackLabel}: ${payload.trim()}`;
+  }
+
+  return `${fallbackLabel}: request failed with status ${response.status}.`;
+}
+
 function mapGeneratedCaptions({
   flavorId,
   flavorSlug,
@@ -179,16 +215,24 @@ function mapGeneratedCaptions({
   })) satisfies CachedCaption[];
 }
 
-async function requestJson<T>(url: string, init: RequestInit) {
+async function requestJson<T>(url: string, init: RequestInit, fallbackLabel: string) {
   const response = await fetch(url, init);
-  const payload = await response.json().catch(() => ({}));
-  const typedPayload = payload as T & { error?: string };
+  const rawPayload = await response.text().catch(() => "");
+  let payload: unknown = {};
 
-  if (!response.ok) {
-    throw new Error(typedPayload.error ?? "The request failed.");
+  if (rawPayload.trim()) {
+    try {
+      payload = JSON.parse(rawPayload) as unknown;
+    } catch {
+      payload = rawPayload;
+    }
   }
 
-  return typedPayload;
+  if (!response.ok) {
+    throw new Error(getRequestFailureMessage(payload, response, fallbackLabel));
+  }
+
+  return payload as T;
 }
 
 export async function runCaptionPipelineForFile({
@@ -217,6 +261,7 @@ export async function runCaptionPipelineForFile({
       },
       method: "POST",
     },
+    "Unable to create an upload URL",
   );
 
   const uploadResponse = await fetch(presign.presignedUrl, {
@@ -249,6 +294,7 @@ export async function runCaptionPipelineForFile({
       },
       method: "POST",
     },
+    "Unable to register the uploaded image",
   );
 
   onStatus?.("generating", {
@@ -269,6 +315,7 @@ export async function runCaptionPipelineForFile({
       },
       method: "POST",
     },
+    "Caption generation failed",
   );
   const captionEntries = mapGeneratedCaptions({
     flavorId,
@@ -279,7 +326,11 @@ export async function runCaptionPipelineForFile({
     imageUrl: presign.cdnUrl,
     runCreatedAt,
     runId,
-  });
+  }).filter((entry) => typeof entry.captionText === "string" && entry.captionText.trim().length > 0);
+
+  if (captionEntries.length === 0) {
+    throw new Error("Caption generation failed: upstream returned no usable captions.");
+  }
 
   return {
     captionEntries,
@@ -321,6 +372,7 @@ export async function runCaptionPipelineForExistingImage({
         },
         method: "POST",
       },
+      "Unable to register the study image",
     );
 
     pipelineImageId = registeredImage.imageId;
@@ -344,19 +396,26 @@ export async function runCaptionPipelineForExistingImage({
       },
       method: "POST",
     },
+    "Caption generation failed",
   );
 
+  const captionEntries = mapGeneratedCaptions({
+    flavorId,
+    flavorSlug,
+    generatedCaptions,
+    imageId: pipelineImageId,
+    imageName,
+    imageUrl,
+    runCreatedAt,
+    runId,
+  }).filter((entry) => typeof entry.captionText === "string" && entry.captionText.trim().length > 0);
+
+  if (captionEntries.length === 0) {
+    throw new Error("Caption generation failed: upstream returned no usable captions.");
+  }
+
   return {
-    captionEntries: mapGeneratedCaptions({
-      flavorId,
-      flavorSlug,
-      generatedCaptions,
-      imageId: pipelineImageId,
-      imageName,
-      imageUrl,
-      runCreatedAt,
-      runId,
-    }),
+    captionEntries,
     imageId: pipelineImageId,
     imageUrl,
   };

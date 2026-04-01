@@ -198,7 +198,11 @@ export function FlavorDetail({
     setSteps(nextSteps.sort((left, right) => left.order - right.order));
   }
 
-  function handleSaveFlavor(draft: { description: string; slug: string }) {
+  function handleSaveFlavor(draft: {
+    description: string;
+    presetSlug: string | null;
+    slug: string;
+  }) {
     startSaveFlavorTransition(async () => {
       try {
         const response = await fetch(`/api/humor-flavors/${flavor.id}`, {
@@ -225,7 +229,11 @@ export function FlavorDetail({
     });
   }
 
-  function handleDuplicateFlavor(draft: { description: string; slug: string }) {
+  function handleDuplicateFlavor(draft: {
+    description: string;
+    presetSlug: string | null;
+    slug: string;
+  }) {
     startDuplicateTransition(async () => {
       try {
         const response = await fetch(`/api/humor-flavors/${flavor.id}/duplicate`, {

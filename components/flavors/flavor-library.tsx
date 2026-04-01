@@ -6,6 +6,7 @@ import { type CSSProperties, useDeferredValue, useState, useTransition } from "r
 import { FlavorFormModal } from "@/components/flavors/flavor-form-modal";
 import { PlusIcon, SearchIcon, SparklesIcon } from "@/components/ui/icons";
 import { getErrorMessage } from "@/lib/errors";
+import { HUMOR_FLAVOR_PRESETS } from "@/lib/flavor-presets";
 import type { HumorFlavor, HumorFlavorListItem } from "@/lib/types";
 
 type FlavorLibraryProps = {
@@ -14,6 +15,8 @@ type FlavorLibraryProps = {
 };
 
 type FlavorPayload = {
+  appliedPresetSlug: string | null;
+  createdStepCount: number;
   flavor: HumorFlavor;
 };
 
@@ -98,12 +101,24 @@ export function FlavorLibrary({ initialFlavors, loadErrors }: FlavorLibraryProps
     return haystack.includes(deferredQuery.trim().toLowerCase());
   });
 
-  function handleCreateFlavor(draft: { description: string; slug: string }) {
+  const presetOptions = HUMOR_FLAVOR_PRESETS.map((preset) => ({
+    description: preset.description,
+    flavorDescription: preset.flavorDescription,
+    label: preset.label,
+    slug: preset.slug,
+  }));
+
+  function handleCreateFlavor(draft: {
+    description: string;
+    presetSlug: string | null;
+    slug: string;
+  }) {
     startCreateTransition(async () => {
       try {
         const response = await fetch("/api/humor-flavors", {
           body: JSON.stringify({
             description: draft.description,
+            presetSlug: draft.presetSlug,
             slug: draft.slug,
           }),
           headers: {
@@ -115,12 +130,15 @@ export function FlavorLibrary({ initialFlavors, loadErrors }: FlavorLibraryProps
         const payload = await parseResponse<FlavorPayload>(response);
         const nextFlavor = {
           ...payload.flavor,
-          stepCount: 0,
+          stepCount: payload.createdStepCount,
         } satisfies HumorFlavorListItem;
 
         setFlavors((current) => [nextFlavor, ...current]);
         setNotice({
-          text: `Created "${payload.flavor.slug}".`,
+          text:
+            payload.createdStepCount > 0
+              ? `Created "${payload.flavor.slug}" with ${payload.createdStepCount} scaffolded steps.`
+              : `Created "${payload.flavor.slug}".`,
           tone: "success",
         });
         setIsCreateOpen(false);
@@ -230,6 +248,7 @@ export function FlavorLibrary({ initialFlavors, loadErrors }: FlavorLibraryProps
         key={`create-flavor-${isCreateOpen ? "open" : "closed"}`}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={handleCreateFlavor}
+        presetOptions={presetOptions}
         submitLabel="Create flavor"
         title="Create a humor flavor"
       />
