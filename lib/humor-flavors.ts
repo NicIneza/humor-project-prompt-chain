@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getHumorFlavorStepTableConfig, getHumorFlavorTableConfig } from "@/lib/config";
-import { normalizeSlug } from "@/lib/slugs";
+import { createRelatedDuplicateSlug, normalizeSlug } from "@/lib/slugs";
 import type { HumorFlavor, HumorFlavorStep } from "@/lib/types";
 
 type HumorFlavorInput = {
@@ -81,6 +81,45 @@ function normalizeCopiedStepRecord(record: Record<string, unknown>) {
         ? (record[config.userPromptColumn] as string)
         : "",
   } satisfies Omit<HumorFlavorStep, "createdAt" | "flavorId" | "id">;
+}
+
+async function flavorSlugExists(supabase: SupabaseClient, slug: string) {
+  const config = getHumorFlavorTableConfig();
+  const { data, error } = await supabase
+    .from(config.tableName)
+    .select("id")
+    .eq(config.slugColumn, slug)
+    .limit(1);
+
+  if (error) {
+    throw new Error(`Unable to validate humor flavor slug "${slug}": ${error.message}`);
+  }
+
+  return Array.isArray(data) && data.length > 0;
+}
+
+async function resolveUniqueDuplicateSlug(
+  supabase: SupabaseClient,
+  sourceSlug: string,
+  requestedSlug: string,
+) {
+  const normalizedRequestedSlug = normalizeSlug(requestedSlug);
+
+  if (normalizedRequestedSlug && !(await flavorSlugExists(supabase, normalizedRequestedSlug))) {
+    return normalizedRequestedSlug;
+  }
+
+  const baseSlug = normalizedRequestedSlug || sourceSlug;
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const candidate = createRelatedDuplicateSlug(sourceSlug, baseSlug);
+
+    if (!(await flavorSlugExists(supabase, candidate))) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Unable to generate a unique duplicate slug for "${sourceSlug}".`);
 }
 
 export async function listHumorFlavors(supabase: SupabaseClient) {
@@ -175,7 +214,10 @@ export async function duplicateHumorFlavor(
 ) {
   const stepConfig = getHumorFlavorStepTableConfig();
   const sourceFlavor = await getHumorFlavorById(supabase, sourceFlavorId);
-  const nextFlavor = await createHumorFlavor(supabase, input);
+  const nextFlavor = await createHumorFlavor(supabase, {
+    ...input,
+    slug: await resolveUniqueDuplicateSlug(supabase, sourceFlavor.slug, input.slug),
+  });
 
   try {
     const { data, error } = await supabase

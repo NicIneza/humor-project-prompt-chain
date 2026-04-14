@@ -19,6 +19,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { getErrorMessage } from "@/lib/errors";
+import { createRelatedDuplicateSlug } from "@/lib/slugs";
 import type { HumorFlavor, HumorFlavorStep, StepCatalog } from "@/lib/types";
 
 type FlavorDetailProps = {
@@ -175,6 +176,9 @@ export function FlavorDetail({
   );
   const [isEditFlavorOpen, setIsEditFlavorOpen] = useState(false);
   const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
+  const [duplicateSlugSuggestion, setDuplicateSlugSuggestion] = useState(
+    `${initialFlavor.slug}-copy`,
+  );
   const [stepBeingEdited, setStepBeingEdited] = useState<HumorFlavorStep | null>(null);
   const [stepBeingViewed, setStepBeingViewed] = useState<HumorFlavorStep | null>(null);
   const [isCreateStepOpen, setIsCreateStepOpen] = useState(false);
@@ -254,6 +258,11 @@ export function FlavorDetail({
         setNotice({ text: getErrorMessage(error), tone: "error" });
       }
     });
+  }
+
+  function openDuplicateModal() {
+    setDuplicateSlugSuggestion(createRelatedDuplicateSlug(flavor.slug));
+    setIsDuplicateOpen(true);
   }
 
   function handleDeleteFlavor() {
@@ -430,7 +439,7 @@ export function FlavorDetail({
               <PlusIcon />
               <span>Add step</span>
             </button>
-            <button className="button button-secondary" onClick={() => setIsDuplicateOpen(true)} type="button">
+            <button className="button button-secondary" onClick={openDuplicateModal} type="button">
               <DuplicateIcon />
               <span>Duplicate</span>
             </button>
@@ -581,14 +590,15 @@ export function FlavorDetail({
       />
 
       <FlavorFormModal
-        description="Choose a new slug and description for the duplicate copy."
+        description="Start from a related unique slug for the duplicate copy. You can still edit it."
         initialDescription={flavor.description ? `Copy of ${flavor.description}` : ""}
-        initialSlug={`${flavor.slug}-copy`}
+        initialSlug={duplicateSlugSuggestion}
         isOpen={isDuplicateOpen}
         isPending={isDuplicatePending}
         key={`duplicate-${flavor.id}-${flavor.slug}-${isDuplicateOpen ? "open" : "closed"}`}
         onClose={() => setIsDuplicateOpen(false)}
         onSubmit={handleDuplicateFlavor}
+        slugHint="If that slug is already taken, the app will mint a related unique variant automatically."
         submitLabel="Create duplicate"
         title="Duplicate flavor"
       />

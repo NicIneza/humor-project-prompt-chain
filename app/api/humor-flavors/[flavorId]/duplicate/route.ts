@@ -4,7 +4,6 @@ import { getSessionContext } from "@/lib/auth";
 import { duplicateHumorFlavor } from "@/lib/humor-flavors";
 import { getErrorMessage } from "@/lib/errors";
 import { isSupabaseConfigured } from "@/lib/config";
-import { normalizeSlug } from "@/lib/slugs";
 
 export const dynamic = "force-dynamic";
 
@@ -34,15 +33,11 @@ export async function POST(
     }
 
     const body = (await request.json()) as { description?: unknown; slug?: unknown };
-    const slug = typeof body.slug === "string" ? normalizeSlug(body.slug) : "";
+    const slug = typeof body.slug === "string" ? body.slug : "";
     const description =
       typeof body.description === "string" && body.description.trim().length > 0
         ? body.description.trim()
         : null;
-
-    if (!slug) {
-      return NextResponse.json({ error: "A humor flavor slug is required." }, { status: 400 });
-    }
 
     const flavor = await duplicateHumorFlavor(supabase, numericFlavorId, {
       description,

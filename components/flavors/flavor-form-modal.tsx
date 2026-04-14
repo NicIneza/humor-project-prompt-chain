@@ -21,6 +21,7 @@ type FlavorFormModalProps = {
   onClose: () => void;
   onSubmit: (draft: { description: string; presetSlug: string | null; slug: string }) => void;
   presetOptions?: FlavorPresetOption[];
+  slugHint?: string;
   submitLabel: string;
   title: string;
 };
@@ -34,6 +35,7 @@ export function FlavorFormModal({
   onClose,
   onSubmit,
   presetOptions = [],
+  slugHint,
   submitLabel,
   title,
 }: FlavorFormModalProps) {
@@ -111,6 +113,7 @@ export function FlavorFormModal({
             required
             value={draftSlug}
           />
+          {slugHint ? <p className="field-hint">{slugHint}</p> : null}
         </div>
 
         <div className="field">
