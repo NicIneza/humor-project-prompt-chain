@@ -6,6 +6,44 @@ import { isSupabaseConfigured } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
+const LOGIN_CAPTION_LANES = [
+  [
+    "draft: campus glamour with the emotional lighting of a vending machine",
+    "draft: everyone here looks aggressively available for networking",
+    "draft: library martyrdom in business casual",
+    "draft: pretending this group project is a personality trait",
+    "draft: the tote bag understood the assignment first",
+  ],
+  [
+    "pass two: dry enough to feel deliberate",
+    "pass two: sharper than the pose deserves",
+    "pass two: dark, subtle, and still readable",
+    "pass two: built for review before it lands",
+    "pass two: weird on purpose, not by accident",
+  ],
+  [
+    "queue: roast the staging, not the person",
+    "queue: let the joke feel earned on second read",
+    "queue: keep it sharp without sounding forced",
+    "queue: every image gets a cleaner final pass",
+    "queue: caption candidates move fast here",
+  ],
+  [
+    "review: test runs come back ready to compare",
+    "review: draft language stays dry and readable",
+    "review: the pipeline trims the corny parts first",
+    "review: every lane is built for quick iteration",
+    "review: humor flavor tweaks stay organized",
+  ],
+  [
+    "final: weird enough to feel original",
+    "final: deadpan without going flat",
+    "final: one image in, better caption out",
+    "final: prompt chain edits stay easy to manage",
+    "final: built for caption testing and cleanup",
+  ],
+] as const;
+
 function getMessage(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -41,23 +79,26 @@ export default async function LoginPage({
             <div className="login-flow-board">
               <div className="login-flow-orb login-flow-orb-a" />
               <div className="login-flow-orb login-flow-orb-b" />
-              <div className="login-flow-ribbon login-flow-ribbon-a">
-                <span className="login-flow-label">Flavor</span>
-                <p className="login-flow-copy">dry campus chaos with a deadpan finish</p>
-              </div>
-              <div className="login-flow-ribbon login-flow-ribbon-b">
-                <span className="login-flow-label">Step</span>
-                <p className="login-flow-copy">
-                  celebrity recognition {"->"} association map {"->"} caption draft
-                </p>
-              </div>
-              <div className="login-flow-ribbon login-flow-ribbon-c">
-                <span className="login-flow-label">Caption</span>
-                <p className="login-flow-copy">dry enough to feel deliberate, sharp enough to feel earned</p>
-              </div>
-              <div className="login-flow-ribbon login-flow-ribbon-d">
-                <span className="login-flow-label">Test Run</span>
-                <p className="login-flow-copy">study images move through the chain and come back ready for review</p>
+              <div className="login-caption-lanes">
+                {LOGIN_CAPTION_LANES.map((lane, laneIndex) => (
+                  <div
+                    className={`login-caption-marquee ${
+                      laneIndex % 2 === 1 ? "login-caption-marquee-reverse" : ""
+                    }`}
+                    key={`lane-${laneIndex}`}
+                  >
+                    <div
+                      className="login-caption-track"
+                      style={{ animationDuration: `${24 + laneIndex * 3}s` }}
+                    >
+                      {[...lane, ...lane].map((caption, captionIndex) => (
+                        <span className="login-caption-chip" key={`lane-${laneIndex}-${captionIndex}`}>
+                          {caption}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </section>

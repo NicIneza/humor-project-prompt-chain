@@ -691,6 +691,7 @@ pre {
   min-height: 100%;
   overflow: hidden;
   border-radius: 28px;
+  isolation: isolate;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
     radial-gradient(circle at 18% 22%, rgba(210, 156, 232, 0.16), transparent 14rem),
@@ -704,6 +705,7 @@ pre {
   border-radius: 999px;
   filter: blur(2px);
   animation: login-orb-drift 10s ease-in-out infinite;
+  z-index: 0;
 }
 
 .login-flow-orb-a {
@@ -723,77 +725,54 @@ pre {
   animation-delay: -4s;
 }
 
-.login-flow-ribbon {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 26px;
+.login-caption-lanes {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.85rem;
+  align-content: center;
+  min-height: 100%;
+  padding: 1.15rem;
+}
+
+.login-caption-marquee {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
   background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.09), transparent 72%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 72%),
     rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.18);
-  transform: var(--login-flow-transform);
-  animation: login-ribbon-drift 7.5s ease-in-out infinite;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(16px);
+}
+
+.login-caption-track {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: max-content;
+  padding: 0.7rem 0;
+  animation: login-caption-marquee 26s linear infinite;
   will-change: transform;
 }
 
-.login-flow-ribbon-a {
-  top: 1.6rem;
-  left: 1.8rem;
-  width: min(17rem, calc(100% - 4rem));
-  --login-flow-transform: rotate(-6deg);
+.login-caption-marquee-reverse .login-caption-track {
+  animation-duration: 30s;
+  animation-direction: reverse;
 }
 
-.login-flow-ribbon-b {
-  top: 2.8rem;
-  right: 1.8rem;
-  width: min(17rem, calc(100% - 4rem));
-  --login-flow-transform: rotate(5deg);
-  animation-delay: -1s;
-}
-
-.login-flow-ribbon-c {
-  top: 8.8rem;
-  left: 50%;
-  width: min(19rem, calc(100% - 5rem));
-  --login-flow-transform: translateX(-50%) rotate(-2deg);
-  animation-delay: -2.2s;
-}
-
-.login-flow-ribbon-d {
-  top: 15.6rem;
-  left: 50%;
-  width: min(18rem, calc(100% - 5rem));
-  --login-flow-transform: translateX(-50%) rotate(2.8deg);
-  animation-delay: -4.4s;
-}
-
-.login-flow-label {
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.login-flow-copy {
-  margin: 0;
-  line-height: 1.55;
+.login-caption-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.56rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(16, 10, 19, 0.24);
   color: var(--ink);
-}
-
-@keyframes login-ribbon-drift {
-  0%,
-  100% {
-    transform: var(--login-flow-transform) translateY(0);
-  }
-  50% {
-    transform: var(--login-flow-transform) translateY(-10px);
-  }
+  font-size: 0.87rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 @keyframes login-orb-drift {
@@ -806,9 +785,18 @@ pre {
   }
 }
 
+@keyframes login-caption-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-flow-orb,
-  .login-flow-ribbon {
+  .login-caption-track {
     animation: none;
   }
 }
@@ -1367,33 +1355,9 @@ html[data-theme="light"] .library-card {
     min-height: 470px;
   }
 
-  .login-flow-ribbon-a,
-  .login-flow-ribbon-b {
-    width: min(16rem, calc(100% - 3rem));
-  }
-
-  .login-flow-ribbon-a {
-    top: 1.2rem;
-    left: 1rem;
-  }
-
-  .login-flow-ribbon-b {
-    top: 4.8rem;
-    right: 1rem;
-  }
-
-  .login-flow-ribbon-c,
-  .login-flow-ribbon-d {
-    width: min(17rem, calc(100% - 3rem));
-    left: 50%;
-  }
-
-  .login-flow-ribbon-c {
-    top: 13rem;
-  }
-
-  .login-flow-ribbon-d {
-    top: 21rem;
+  .login-caption-lanes {
+    padding: 1rem;
+    gap: 0.75rem;
   }
 
   .field-span-2 {
@@ -1440,27 +1404,13 @@ html[data-theme="light"] .library-card {
     min-height: 440px;
   }
 
-  .login-flow-ribbon-a {
-    top: 1rem;
-    left: 0.9rem;
+  .login-caption-lanes {
+    padding: 0.8rem;
+    gap: 0.65rem;
   }
 
-  .login-flow-ribbon-b {
-    top: 5.4rem;
-    right: 0.9rem;
-  }
-
-  .login-flow-ribbon-c,
-  .login-flow-ribbon-d {
-    width: min(15rem, calc(100% - 2.2rem));
-  }
-
-  .login-flow-ribbon-c {
-    top: 13rem;
-  }
-
-  .login-flow-ribbon-d {
-    top: 20.2rem;
+  .login-caption-chip {
+    font-size: 0.8rem;
   }
 
   .step-row {
